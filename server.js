@@ -243,13 +243,14 @@ app.get('/api/analytics/influencers', async (req, res) => {
   try {
     const [rows] = await pool.execute(`
       SELECT 
-        id,
-        influencer_name,
-        image_path,
-        sector,
-        status
-      FROM analytics
-      ORDER BY influencer_name ASC
+  id,
+  influencer_name,
+  image_path,
+  sector,
+  status,
+  is_confirmed
+FROM analytics
+ORDER BY influencer_name ASC
     `);
 
     console.log(`✅ ${rows.length} influenceurs chargés`);
@@ -261,9 +262,9 @@ app.get('/api/analytics/influencers', async (req, res) => {
   }
 });
 //Barre de recherche Etape 3
+// 🔍 Recherche influenceurs (STEP 3)
 app.get('/api/analytics/search', async (req, res) => {
-  const q = `%${req.query.q || ''}%`;
-  console.log('🔍 SEARCH analytics:', q);
+  const q = req.query.q || '';
 
   try {
     const [rows] = await pool.execute(`
@@ -272,20 +273,21 @@ app.get('/api/analytics/search', async (req, res) => {
         influencer_name,
         image_path,
         sector,
-        status
+        status,
+        is_confirmed
       FROM analytics
       WHERE influencer_name LIKE ?
       ORDER BY influencer_name ASC
-    `, [q]);
+    `, [`%${q}%`]);
 
-    console.log(`✅ ${rows.length} résultat(s) search`);
     res.json(rows);
 
   } catch (err) {
-    console.error('❌ Erreur search analytics', err);
-    res.status(500).json({ error: 'Erreur search analytics' });
+    console.error('❌ Erreur analytics search', err);
+    res.status(500).json([]);
   }
 });
+
 // 📊Calculs Analytiques réels pour un influenceur
 app.get('/api/analytics/stats/:name', async (req, res) => {
   const influencerName = req.params.name;
