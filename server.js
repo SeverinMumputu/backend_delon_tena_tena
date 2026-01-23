@@ -1,19 +1,26 @@
+
 require("dotenv").config();
-import path from 'path';
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2/promise");
 
 const app = express();
+const path = require('path');
+const ROOT_DIR = process.cwd();
+
+
+const filePath = path.join(ROOT_DIR, book.pdf_file);
+res.download(filePath);
+
 
 /* ---------- Middleware ---------- */
 app.use(cors());
 app.use(express.json());
 
-app.use('/assets', express.static(
-  path.join(process.cwd(), 'public')
-));
+app.use('/uploads', express.static(path.join(ROOT_DIR, 'uploads')));
 
+
+app.use('/pdf', express.static('pdf'));
 
 
 /* ---------- Désormain une connexion déployable sur héberheur backend ---------- */
@@ -26,7 +33,6 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10
 });
-
 
 /* ---------- Routes ---------- */
 
@@ -61,9 +67,9 @@ app.post("/api/newsletter/subscribe", async (req, res) => {
 app.delete("/api/newsletter/unsubscribe", async (req, res) => {
   const { email } = req.body;
 
-  if (!email) {
+  if (!email) { 
     return res.status(400).json({ message: "Email requis." });
-  }
+  } 
 
   const [result] = await pool.execute(
     "DELETE FROM newsletter WHERE email = ?",
@@ -379,11 +385,7 @@ app.get('/api/stepper/books', async (req, res) => {
         publication_date,
         book_description AS description,
         book_format AS format,
-        CASE
-          WHEN cover_image IS NOT NULL AND cover_image != ''
-          THEN CONCAT('/SiteWeb/FondationDelonTenaTena/', cover_image)
-          ELSE NULL
-        END AS cover_image
+        cover_image
       FROM stepper_book
       ORDER BY title ASC
     `);
@@ -391,16 +393,8 @@ app.get('/api/stepper/books', async (req, res) => {
     res.json(rows);
 
   } catch (err) {
-    console.error('❌ BOOKS SQL ERROR FULL:', {
-      message: err.message,
-      code: err.code,
-      sqlState: err.sqlState
-    });
-
-    res.status(500).json({
-      error: 'BOOKS_FETCH_FAILED',
-      details: err.code
-    });
+    console.error('❌ BOOKS SQL ERROR:', err);
+    res.status(500).json({ error: 'BOOKS_FETCH_FAILED' });
   }
 });
 
@@ -416,7 +410,8 @@ app.get('/api/stepper/book/download/:id', async (req, res) => {
       return res.status(404).send('Livre introuvable');
     }
 
-    const filePath = `${__dirname}/SiteWeb/FondationDelonTenaTena/${book.pdf_file}`;
+    const filePath = path.join(ROOT_DIR, book.pdf_file);
+
     res.download(filePath);
 
   } catch (err) {
@@ -424,6 +419,7 @@ app.get('/api/stepper/book/download/:id', async (req, res) => {
     res.status(500).send('Erreur téléchargement');
   }
 });
+
 
 
 // Stepper Étape 5 — Donation
