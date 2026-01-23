@@ -364,8 +364,6 @@ app.get('/api/stepper/participant/:id', async (req, res) => {
 });
 // 📚 STEP 4 — Livres disponibles
 app.get('/api/stepper/books', async (req, res) => {
-  console.log('➡️ GET /api/stepper/books');
-
   try {
     const [rows] = await pool.execute(`
       SELECT
@@ -373,29 +371,39 @@ app.get('/api/stepper/books', async (req, res) => {
         title,
         author,
         publisher,
-        description,
-        cover_image
-      FROM books
-      WHERE is_active = 1
-      ORDER BY id DESC
+        publication_date,
+        book_description AS description,
+        book_format AS format,
+        CASE
+          WHEN cover_image IS NOT NULL AND cover_image != ''
+          THEN CONCAT('/SiteWeb/FondationDelonTenaTena/', cover_image)
+          ELSE NULL
+        END AS cover_image
+      FROM stepper_book
+      ORDER BY title ASC
     `);
 
-    console.log(`📦 ${rows.length} livre(s) trouvés`);
-    console.table(rows);
-
     res.json(rows);
+
   } catch (err) {
-    console.error('❌ Error fetching books:', err);
-    res.status(500).json({ error: 'BOOKS_FETCH_FAILED' });
+    console.error('❌ BOOKS SQL ERROR FULL:', {
+      message: err.message,
+      code: err.code,
+      sqlState: err.sqlState
+    });
+
+    res.status(500).json({
+      error: 'BOOKS_FETCH_FAILED',
+      details: err.code
+    });
   }
 });
+
 //Téléchargement des livres Stepper 4
 app.get('/api/stepper/book/download/:id', async (req, res) => {
-  console.log('⬇️ Download book', req.params.id);
-
   try {
     const [[book]] = await pool.execute(
-      `SELECT pdf_file FROM books WHERE id = ? LIMIT 1`,
+      `SELECT pdf_file FROM stepper_book WHERE id = ? LIMIT 1`,
       [req.params.id]
     );
 
@@ -403,14 +411,15 @@ app.get('/api/stepper/book/download/:id', async (req, res) => {
       return res.status(404).send('Livre introuvable');
     }
 
-    const filePath = `${__dirname}/public/books/${book.pdf_file}`;
-
+    const filePath = `${__dirname}/SiteWeb/FondationDelonTenaTena/${book.pdf_file}`;
     res.download(filePath);
+
   } catch (err) {
     console.error('❌ Download error:', err);
     res.status(500).send('Erreur téléchargement');
   }
 });
+
 
 // Stepper Étape 5 — Donation
 app.post('/api/stepper/step4', async (req, res) => {
