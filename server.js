@@ -1,4 +1,5 @@
 require("dotenv").config();
+import path from 'path';
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2/promise");
@@ -8,7 +9,11 @@ const app = express();
 /* ---------- Middleware ---------- */
 app.use(cors());
 app.use(express.json());
-app.use('/SiteWeb', express.static('SiteWeb'));
+
+app.use('/assets', express.static(
+  path.join(process.cwd(), 'public')
+));
+
 
 
 /* ---------- Désormain une connexion déployable sur héberheur backend ---------- */
