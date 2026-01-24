@@ -9,18 +9,12 @@ const path = require('path');
 const ROOT_DIR = process.cwd();
 
 
-const filePath = path.join(ROOT_DIR, book.pdf_file);
-res.download(filePath);
-
-
 /* ---------- Middleware ---------- */
 app.use(cors());
 app.use(express.json());
 
 app.use('/uploads', express.static(path.join(ROOT_DIR, 'uploads')));
-
-
-app.use('/pdf', express.static('pdf'));
+app.use('/pdf', express.static(path.join(ROOT_DIR, 'pdf')));
 
 
 /* ---------- Désormain une connexion déployable sur héberheur backend ---------- */
@@ -373,54 +367,6 @@ app.get('/api/stepper/participant/:id', async (req, res) => {
 
   res.json(rows[0] || null);
 });
-// 📚 STEP 4 — Livres disponibles
-app.get('/api/stepper/books', async (req, res) => {
-  try {
-    const [rows] = await pool.execute(`
-      SELECT
-        id,
-        title,
-        author,
-        publisher,
-        publication_date,
-        book_description AS description,
-        book_format AS format,
-        cover_image
-      FROM stepper_book
-      ORDER BY title ASC
-    `);
-
-    res.json(rows);
-
-  } catch (err) {
-    console.error('❌ BOOKS SQL ERROR:', err);
-    res.status(500).json({ error: 'BOOKS_FETCH_FAILED' });
-  }
-});
-
-//Téléchargement des livres Stepper 4
-app.get('/api/stepper/book/download/:id', async (req, res) => {
-  try {
-    const [[book]] = await pool.execute(
-      `SELECT pdf_file FROM stepper_book WHERE id = ? LIMIT 1`,
-      [req.params.id]
-    );
-
-    if (!book) {
-      return res.status(404).send('Livre introuvable');
-    }
-
-    const filePath = path.join(ROOT_DIR, book.pdf_file);
-
-    res.download(filePath);
-
-  } catch (err) {
-    console.error('❌ Download error:', err);
-    res.status(500).send('Erreur téléchargement');
-  }
-});
-
-
 
 // Stepper Étape 5 — Donation
 app.post('/api/stepper/step4', async (req, res) => {
