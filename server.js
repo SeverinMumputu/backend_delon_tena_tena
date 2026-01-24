@@ -8,14 +8,9 @@ const app = express();
 const path = require('path');
 const ROOT_DIR = process.cwd();
 
-
 /* ---------- Middleware ---------- */
 app.use(cors());
 app.use(express.json());
-
-app.use('/uploads', express.static(path.join(ROOT_DIR, 'uploads')));
-app.use('/pdf', express.static(path.join(ROOT_DIR, 'pdf')));
-
 
 /* ---------- Désormain une connexion déployable sur héberheur backend ---------- */
 const pool = mysql.createPool({
